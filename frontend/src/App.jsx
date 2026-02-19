@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import DashboardPage from './features/dashboard/DashboardPage';
 import CameraPage from './features/camera/CameraPage';
+import HealthPage from './features/health/HealthPage';
 import './App.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/camera" element={<CameraPage />} />
+            <Route path="/health" element={<HealthPage />} />
           </Routes>
         </main>
       </div>

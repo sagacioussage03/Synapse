@@ -55,6 +55,9 @@ export default function NavBar() {
         <Link to="/camera" style={makeLinkStyle('/camera')}>
           👁️ Live Feed
         </Link>
+        <Link to="/health" style={makeLinkStyle('/health')}>
+          🔍 Health
+        </Link>
       </div>
     </nav>
   );
