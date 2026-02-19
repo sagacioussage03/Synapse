@@ -1,58 +1,71 @@
 import { useState } from 'react';
 import { hardwareApi, systemApi } from '../../services/api';
+import PageSection from '../../components/layout/PageSection';
+import Button from '../../components/ui/Button';
 
 export default function DashboardPage() {
   const [speechText, setSpeechText] = useState('');
   const [processList, setProcessList] = useState([]);
 
   const handleSpeak = async () => {
-    if (speechText) await hardwareApi.speak(speechText);
+    if (!speechText) return;
+    await hardwareApi.speak(speechText);
     setSpeechText('');
   };
 
   const fetchProcesses = async () => {
     const res = await systemApi.getProcesses();
-    setProcessList(res.data.processes); 
+    setProcessList(res.data.processes);
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <div className="card">
-        <h2>Hardware Control</h2>
+    <div className="app-main">
+      <PageSection
+        title="Hardware Control"
+        subtitle="Torch, vibration, and voice output on your phone"
+      >
         <div className="button-group">
-          <button onClick={() => hardwareApi.toggleTorch('on')}>🔦 Torch ON</button>
-          <button onClick={() => hardwareApi.toggleTorch('off')}>Torch OFF</button>
-          <button onClick={() => hardwareApi.vibrate()}>📳 Vibrate</button>
+          <Button onClick={() => hardwareApi.toggleTorch('on')}>🔦 Torch ON</Button>
+          <Button onClick={() => hardwareApi.toggleTorch('off')}>Torch OFF</Button>
+          <Button onClick={() => hardwareApi.vibrate()}>📳 Vibrate</Button>
         </div>
 
-        <div className="input-group" style={{ marginTop: '15px' }}>
-          <input 
-            type="text" 
-            placeholder="What should I say?" 
+        <div className="input-group">
+          <input
+            type="text"
+            placeholder="What should I say?"
             value={speechText}
             onChange={(e) => setSpeechText(e.target.value)}
           />
-          <button onClick={handleSpeak}>🗣️ Speak</button>
+          <Button variant="primary" onClick={handleSpeak}>
+            🗣️ Speak
+          </Button>
         </div>
-      </div>
+      </PageSection>
 
-      <div className="card" style={{ marginTop: '20px' }}>
-        <h2>System Monitor</h2>
-        <button onClick={fetchProcesses}>🔍 Scan Processes</button>
-        
+      <PageSection
+        title="System Monitor"
+        subtitle="Processes running on your phone (Termux environment)"
+        actions={
+          <Button variant="primary" onClick={fetchProcesses}>
+            🔍 Scan Processes
+          </Button>
+        }
+      >
         {processList.length > 0 && (
-          <div className="process-list" style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '10px', textAlign: 'left', background: '#222', padding: '10px', borderRadius: '5px' }}>
+          <div className="process-list">
             <p>Total: {processList.length}</p>
             <ul>
               {processList.map((proc, index) => (
-                <li key={index} style={{ fontSize: '12px', listStyle: 'none' }}>
-                  <strong>PID {proc.pid}:</strong> {proc.name} <em>({proc.username})</em>
+                <li key={index}>
+                  <strong>PID {proc.pid}:</strong> {proc.name}{' '}
+                  {proc.username && <em>({proc.username})</em>}
                 </li>
               ))}
             </ul>
           </div>
         )}
-      </div>
+      </PageSection>
     </div>
   );
 }
