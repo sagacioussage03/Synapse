@@ -37,16 +37,20 @@ export default function HealthPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [healthRes, battRes, netRes] = await Promise.all([
+      // 🟢 Promise.allSettled won't crash if one endpoint fails
+      const results = await Promise.allSettled([
         systemApi.getHealth(),
         systemApi.getBattery(),
         systemApi.getNetwork(),
       ]);
-      setHealth(healthRes.data);
-      setBattery(battRes.data);
-      setNetwork(netRes.data);
+
+      // Grab data if fulfilled, otherwise return null
+      setHealth(results[0].status === 'fulfilled' ? results[0].value.data : null);
+      setBattery(results[1].status === 'fulfilled' ? results[1].value.data : null);
+      setNetwork(results[2].status === 'fulfilled' ? results[2].value.data : null);
+      
     } catch (e) {
-      console.error('Failed to fetch health data', e);
+      console.error('Critical failure in fetching data', e);
     } finally {
       setLoading(false);
     }

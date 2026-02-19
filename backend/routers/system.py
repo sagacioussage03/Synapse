@@ -2,6 +2,8 @@ from fastapi import APIRouter
 import subprocess
 import psutil
 import json
+import time
+import os
 
 router = APIRouter(prefix="/system", tags=["System"])
 
@@ -27,7 +29,22 @@ def get_pm2_status():
 def get_health():
     cpu_percent = psutil.cpu_percent(interval=0.4)
     mem = psutil.virtual_memory()
-    disk = psutil.disk_usage("/")  # adjust path if needed
+    
+    # 🟢 Point to Termux's home folder, NOT the root "/"
+    termux_home = os.environ.get("HOME", "/data/data/com.termux/files/home")
+    
+    try:
+        disk = psutil.disk_usage(termux_home)
+        disk_data = {
+            "total": disk.total,
+            "used": disk.used,
+            "free": disk.free,
+            "percent": disk.percent,
+            "mount": "Termux Home",
+        }
+    except Exception as e:
+        disk_data = {"error": str(e)}
+
     net = psutil.net_io_counters()
 
     return {
@@ -41,13 +58,7 @@ def get_health():
             "available": mem.available,
             "percent": mem.percent,
         },
-        "disk": {
-            "total": disk.total,
-            "used": disk.used,
-            "free": disk.free,
-            "percent": disk.percent,
-            "mount": "/",
-        },
+        "disk": disk_data,
         "network": {
             "bytes_sent": net.bytes_sent,
             "bytes_recv": net.bytes_recv,
