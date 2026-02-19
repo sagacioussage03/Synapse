@@ -1,0 +1,5 @@
+node_modules/
+venv-Synapse/
+__pycache__/
+snapshots/
+.env
