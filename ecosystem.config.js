@@ -12,7 +12,7 @@ module.exports = {
       script: "npm",
       args: "run dev -- --host 0.0.0.0",
       cwd: "./frontend"
-    }
+    },
     {
       name: "alarm_daemon",
       script: "../../venv-Synapse/bin/python",
