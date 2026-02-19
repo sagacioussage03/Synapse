@@ -27,12 +27,28 @@ def get_pm2_status():
 
 @router.get("/health")
 def get_health():
-    cpu_percent = psutil.cpu_percent(interval=0.4)
-    mem = psutil.virtual_memory()
-    
-    # 🟢 Point to Termux's home folder, NOT the root "/"
+    # 1. CPU
+    try:
+        cpu_percent = psutil.cpu_percent(interval=0.4)
+        cores = psutil.cpu_count(logical=True)
+        cpu_data = {"percent": cpu_percent, "cores": cores}
+    except Exception as e:
+        cpu_data = {"percent": 0, "cores": 0, "error": str(e)}
+
+    # 2. Memory
+    try:
+        mem = psutil.virtual_memory()
+        mem_data = {
+            "total": mem.total,
+            "used": mem.used,
+            "available": mem.available,
+            "percent": mem.percent,
+        }
+    except Exception as e:
+        mem_data = {"error": str(e)}
+
+    # 3. Disk (Pointed safely at Termux Home)
     termux_home = os.environ.get("HOME", "/data/data/com.termux/files/home")
-    
     try:
         disk = psutil.disk_usage(termux_home)
         disk_data = {
@@ -45,30 +61,34 @@ def get_health():
     except Exception as e:
         disk_data = {"error": str(e)}
 
-    net = psutil.net_io_counters()
-
-    return {
-        "cpu": {
-            "percent": cpu_percent,
-            "cores": psutil.cpu_count(logical=True),
-        },
-        "memory": {
-            "total": mem.total,
-            "used": mem.used,
-            "available": mem.available,
-            "percent": mem.percent,
-        },
-        "disk": disk_data,
-        "network": {
+    # 4. Network Traffic (The one Android hates)
+    try:
+        net = psutil.net_io_counters()
+        net_data = {
             "bytes_sent": net.bytes_sent,
             "bytes_recv": net.bytes_recv,
             "packets_sent": net.packets_sent,
             "packets_recv": net.packets_recv,
-        },
-        "uptime": {
-            "boot_time": psutil.boot_time(),
-            "uptime_seconds": int(time.time() - psutil.boot_time()),
-        },
+        }
+    except Exception as e:
+        net_data = {"error": str(e)}
+
+    # 5. Uptime
+    try:
+        boot = psutil.boot_time()
+        uptime_data = {
+            "boot_time": boot,
+            "uptime_seconds": int(time.time() - boot),
+        }
+    except Exception as e:
+        uptime_data = {"error": str(e)}
+
+    return {
+        "cpu": cpu_data,
+        "memory": mem_data,
+        "disk": disk_data,
+        "network": net_data,
+        "uptime": uptime_data,
     }
 
 @router.get("/network")
