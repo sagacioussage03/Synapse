@@ -18,6 +18,7 @@ function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/camera" element={<CameraPage />} />
             <Route path="/health" element={<HealthPage />} />
+            <Route path="/bots" element={<BotsPage />} />
           </Routes>
         </main>
       </div>

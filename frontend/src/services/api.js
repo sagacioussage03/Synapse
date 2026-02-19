@@ -15,3 +15,9 @@ export const hardwareApi = {
     getBattery: () => axios.get(`${API_BASE}/system/battery`),   // or /hardware/battery
     getNetwork: () => axios.get(`${API_BASE}/system/network`),
   };
+
+  export const alarmApi = {
+    getAlarm: () => axios.get(`${API_BASE}/alarm`),
+    setAlarm: ({ time, active }) =>
+      axios.post(`${API_BASE}/alarm`, { time, active }),
+  };

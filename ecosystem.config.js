@@ -13,5 +13,12 @@ module.exports = {
       args: "run dev -- --host 0.0.0.0",
       cwd: "./frontend"
     }
+    {
+      name: "alarm_daemon",
+      script: "../../venv-Synapse/bin/python",
+      args: "alarm_bot.py",
+      cwd: "./bots/alarm_bot",
+      interpreter: "none" 
+    }
   ]
 };

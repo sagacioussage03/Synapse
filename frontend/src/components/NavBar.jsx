@@ -58,6 +58,9 @@ export default function NavBar() {
         <Link to="/health" style={makeLinkStyle('/health')}>
           🔍 Health
         </Link>
+        <Link to="/bots" style={makeLinkStyle('/bots')}>
+          🤖 Bots
+        </Link>
       </div>
     </nav>
   );
