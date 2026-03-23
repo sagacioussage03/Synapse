@@ -5,7 +5,11 @@ import json
 import time
 import os
 
+from logger import get_logger
+
+logger = get_logger("system")
 router = APIRouter(prefix="/system", tags=["System"])
+
 
 @router.get("/processes")
 def get_processes():
@@ -15,7 +19,9 @@ def get_processes():
             processes.append(proc.info)
         except psutil.NoSuchProcess:
             pass
+    logger.info("Process scan → %d processes found", len(processes))
     return {"total": len(processes), "processes": processes}
+
 
 @router.get("/health")
 def get_health():
@@ -25,6 +31,7 @@ def get_health():
         cores = psutil.cpu_count(logical=True)
         cpu_data = {"percent": cpu_percent, "cores": cores}
     except Exception as e:
+        logger.exception("Failed to read CPU stats")
         cpu_data = {"percent": 0, "cores": 0, "error": str(e)}
 
     # 2. Memory
@@ -37,6 +44,7 @@ def get_health():
             "percent": mem.percent,
         }
     except Exception as e:
+        logger.exception("Failed to read memory stats")
         mem_data = {"error": str(e)}
 
     # 3. Disk (Pointed safely at Termux Home)
@@ -51,9 +59,10 @@ def get_health():
             "mount": "Termux Home",
         }
     except Exception as e:
+        logger.exception("Failed to read disk stats for %s", termux_home)
         disk_data = {"error": str(e)}
 
-    # 4. Network Traffic (The one Android hates)
+    # 4. Network Traffic
     try:
         net = psutil.net_io_counters()
         net_data = {
@@ -63,6 +72,7 @@ def get_health():
             "packets_recv": net.packets_recv,
         }
     except Exception as e:
+        logger.exception("Failed to read network counters")
         net_data = {"error": str(e)}
 
     # 5. Uptime
@@ -73,6 +83,7 @@ def get_health():
             "uptime_seconds": int(time.time() - boot),
         }
     except Exception as e:
+        logger.exception("Failed to read uptime")
         uptime_data = {"error": str(e)}
 
     return {
@@ -82,6 +93,7 @@ def get_health():
         "network": net_data,
         "uptime": uptime_data,
     }
+
 
 @router.get("/network")
 def get_network_status():
@@ -97,10 +109,9 @@ def get_network_status():
         )
         data["wifi"] = json.loads(wifi_proc.stdout)
     except Exception as e:
+        logger.warning("Wi-Fi connection info unavailable: %s", e)
         data["wifi_error"] = str(e)
 
-    # Optionally, simple IP info via termux or ip route / ifconfig etc.
-    # Example: termux-wifi-scaninfo returns array of networks
     try:
         scan_proc = subprocess.run(
             ["termux-wifi-scaninfo"],
@@ -110,12 +121,15 @@ def get_network_status():
         )
         data["wifi_scan"] = json.loads(scan_proc.stdout)
     except Exception as e:
+        logger.warning("Wi-Fi scan unavailable: %s", e)
         data["wifi_scan_error"] = str(e)
 
     return data
 
+
 @router.get("/battery")
 def get_battery_status():
+    logger.info("Battery status requested")
     result = subprocess.run(
         ["termux-battery-status"],
         capture_output=True,
@@ -124,4 +138,5 @@ def get_battery_status():
     try:
         return json.loads(result.stdout)
     except Exception:
+        logger.warning("Could not parse battery JSON, returning raw output")
         return {"raw_output": result.stdout}

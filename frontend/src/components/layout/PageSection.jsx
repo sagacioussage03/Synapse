@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function PageSection({ title, subtitle, actions, children }) {
   return (
     <section style={{ marginBottom: 24 }}>

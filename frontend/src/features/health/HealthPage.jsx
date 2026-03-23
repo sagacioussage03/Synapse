@@ -28,6 +28,12 @@ function formatDuration(seconds) {
   return parts.join(' ');
 }
 
+function progressColor(pct) {
+  if (pct > 85) return 'red';
+  if (pct > 60) return 'yellow';
+  return 'green';
+}
+
 export default function HealthPage() {
   const [health, setHealth] = useState(null);
   const [battery, setBattery] = useState(null);
@@ -37,18 +43,15 @@ export default function HealthPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      // 🟢 Promise.allSettled won't crash if one endpoint fails
       const results = await Promise.allSettled([
         systemApi.getHealth(),
         systemApi.getBattery(),
         systemApi.getNetwork(),
       ]);
 
-      // Grab data if fulfilled, otherwise return null
       setHealth(results[0].status === 'fulfilled' ? results[0].value.data : null);
       setBattery(results[1].status === 'fulfilled' ? results[1].value.data : null);
       setNetwork(results[2].status === 'fulfilled' ? results[2].value.data : null);
-      
     } catch (e) {
       console.error('Critical failure in fetching data', e);
     } finally {
@@ -61,6 +64,8 @@ export default function HealthPage() {
   }, []);
 
   const cpuPercent = health?.cpu?.percent ?? 0;
+  const memPercent = health?.memory?.percent ?? 0;
+  const diskPercent = health?.disk?.percent ?? 0;
   const mem = health?.memory;
   const disk = health?.disk;
   const netIo = health?.network;
@@ -68,100 +73,94 @@ export default function HealthPage() {
   return (
     <div className="app-main">
       <PageSection
-        title="Phone Overview"
+        title="System Health"
         subtitle="CPU, memory, storage and uptime for your Termux host"
         actions={
           <Button variant="primary" onClick={fetchAll} disabled={loading}>
-            {loading ? 'Refreshing…' : '↻ Refresh'}
+            {loading ? '⏳ Refreshing…' : '↻ Refresh'}
           </Button>
         }
       >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-          <div>
-            <div className="card-subtitle">CPU Usage</div>
-            <div style={{ fontSize: '1.6rem', marginTop: 4 }}>{cpuPercent.toFixed(0)}%</div>
-            <div className="card-subtitle">
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-label">CPU Usage</div>
+            <div className="stat-value">{cpuPercent.toFixed(0)}%</div>
+            <div className="stat-detail">
               Cores: {health?.cpu?.cores ?? '-'}
             </div>
-            <div
-              style={{
-                marginTop: 8,
-                height: 6,
-                borderRadius: 999,
-                background: '#111827',
-                overflow: 'hidden',
-              }}
-            >
+            <div className="progress-track">
               <div
-                style={{
-                  width: `${Math.min(cpuPercent, 100)}%`,
-                  height: '100%',
-                  background:
-                    cpuPercent > 80
-                      ? 'linear-gradient(90deg, #f97373, #facc15)'
-                      : 'linear-gradient(90deg, #22c55e, #22d3ee)',
-                  transition: 'width 0.2s ease-out',
-                }}
+                className={`progress-fill ${progressColor(cpuPercent)}`}
+                style={{ width: `${Math.min(cpuPercent, 100)}%` }}
               />
             </div>
           </div>
 
-          <div>
-            <div className="card-subtitle">Memory</div>
-            <div style={{ marginTop: 4 }}>
+          <div className="stat-card">
+            <div className="stat-label">Memory</div>
+            <div className="stat-value">{memPercent.toFixed(0)}%</div>
+            <div className="stat-detail">
               {formatBytes(mem?.used)} / {formatBytes(mem?.total)}
             </div>
-            <div className="card-subtitle">
-              Used: {mem ? `${mem.percent.toFixed(0)}%` : '-'}
+            <div className="progress-track">
+              <div
+                className={`progress-fill ${progressColor(memPercent)}`}
+                style={{ width: `${Math.min(memPercent, 100)}%` }}
+              />
             </div>
           </div>
 
-          <div>
-            <div className="card-subtitle">Storage</div>
-            <div style={{ marginTop: 4 }}>
-              {formatBytes(disk?.used)} / {formatBytes(disk?.total)}
+          <div className="stat-card">
+            <div className="stat-label">Storage</div>
+            <div className="stat-value">{diskPercent.toFixed(0)}%</div>
+            <div className="stat-detail">
+              {formatBytes(disk?.free)} free of {formatBytes(disk?.total)}
             </div>
-            <div className="card-subtitle">
-              Free: {formatBytes(disk?.free)} ({disk ? `${disk.percent.toFixed(0)}% used` : '-'})
+            <div className="progress-track">
+              <div
+                className={`progress-fill ${progressColor(diskPercent)}`}
+                style={{ width: `${Math.min(diskPercent, 100)}%` }}
+              />
             </div>
           </div>
 
-          <div>
-            <div className="card-subtitle">Uptime</div>
-            <div style={{ marginTop: 4, fontSize: '1.1rem' }}>
+          <div className="stat-card">
+            <div className="stat-label">Uptime</div>
+            <div className="stat-value">
               {health?.uptime
                 ? formatDuration(health.uptime.uptime_seconds)
                 : '-'}
             </div>
+            <div className="stat-detail">Since boot</div>
           </div>
         </div>
       </PageSection>
 
       <PageSection
         title="Battery"
-        subtitle="Reported by Termux • termux-battery-status"
+        subtitle="Reported by Termux — termux-battery-status"
       >
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-          <div>
-            <div className="card-subtitle">Level</div>
-            <div style={{ fontSize: '1.5rem', marginTop: 4 }}>
+        <div className="battery-grid">
+          <div className="battery-item">
+            <div className="stat-label">Level</div>
+            <div className="battery-level">
               {battery?.percentage ?? '-'}%
             </div>
           </div>
-          <div>
-            <div className="card-subtitle">Status</div>
-            <div style={{ marginTop: 4 }}>
+          <div className="battery-item">
+            <div className="stat-label">Status</div>
+            <div style={{ marginTop: 4, fontSize: '1rem' }}>
               {battery?.status ?? battery?.health ?? '-'}
             </div>
           </div>
-          <div>
-            <div className="card-subtitle">Plugged</div>
+          <div className="battery-item">
+            <div className="stat-label">Plugged</div>
             <div style={{ marginTop: 4 }}>
               {battery?.plugged ?? '-'}
             </div>
           </div>
-          <div>
-            <div className="card-subtitle">Temperature</div>
+          <div className="battery-item">
+            <div className="stat-label">Temperature</div>
             <div style={{ marginTop: 4 }}>
               {battery?.temperature != null ? `${battery.temperature}°C` : '-'}
             </div>
@@ -171,22 +170,12 @@ export default function HealthPage() {
 
       <PageSection
         title="Network"
-        subtitle="Wi‑Fi status and traffic • termux-wifi-connectioninfo / psutil"
+        subtitle="Wi‑Fi status and traffic — termux-wifi-connectioninfo / psutil"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="network-section">
           <div>
-            <div className="card-subtitle">Wi‑Fi Connection</div>
-            <pre
-              style={{
-                marginTop: 4,
-                background: '#020617',
-                borderRadius: 8,
-                padding: 10,
-                fontSize: 11,
-                maxHeight: 180,
-                overflow: 'auto',
-              }}
-            >
+            <div className="stat-label">Wi‑Fi Connection</div>
+            <pre className="data-block">
               {network?.wifi
                 ? JSON.stringify(network.wifi, null, 2)
                 : network?.wifi_error || 'No Wi‑Fi data'}
@@ -194,10 +183,10 @@ export default function HealthPage() {
           </div>
 
           <div>
-            <div className="card-subtitle">Traffic (since boot)</div>
-            <div style={{ marginTop: 4, fontSize: '0.9rem' }}>
-              Sent: {formatBytes(netIo?.bytes_sent)} • Received:{' '}
-              {formatBytes(netIo?.bytes_recv)}
+            <div className="stat-label">Traffic (since boot)</div>
+            <div className="traffic-stats">
+              <span>⬆ Sent: {formatBytes(netIo?.bytes_sent)}</span>
+              <span>⬇ Received: {formatBytes(netIo?.bytes_recv)}</span>
             </div>
           </div>
         </div>

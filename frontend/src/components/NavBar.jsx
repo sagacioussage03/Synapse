@@ -1,66 +1,32 @@
 import { Link, useLocation } from 'react-router-dom';
 
+const links = [
+  { to: '/', label: 'Dashboard', icon: '⚡' },
+  { to: '/camera', label: 'Live Feed', icon: '👁️' },
+  { to: '/health', label: 'Health', icon: '📊' },
+  { to: '/services', label: 'Services', icon: '🔗' },
+];
+
 export default function NavBar() {
   const location = useLocation();
 
-  const linkBaseStyle = {
-    color: 'var(--text-muted)',
-    textDecoration: 'none',
-    fontSize: '0.95rem',
-    fontWeight: 500,
-    padding: '6px 14px',
-    borderRadius: '999px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-  };
-
-  const makeLinkStyle = (path) => ({
-    ...linkBaseStyle,
-    ...(location.pathname === path && {
-      background: 'var(--accent-soft)',
-      color: 'var(--accent)',
-    }),
-  });
-
   return (
-    <nav
-      style={{
-        background: 'rgba(3, 9, 25, 0.98)',
-        padding: '14px 24px',
-        display: 'flex',
-        gap: '18px',
-        borderBottom: '1px solid var(--border-subtle)',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backdropFilter: 'blur(16px)',
-      }}
-    >
-      <Link
-        to="/"
-        style={{
-          color: 'var(--accent)',
-          fontSize: '1.1rem',
-          fontWeight: 700,
-          letterSpacing: '0.04em',
-        }}
-      >
-        🎛️ Synapse Core
+    <nav className="navbar">
+      <Link to="/" className="navbar-brand">
+        🎛️ Synapse
       </Link>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <Link to="/" style={makeLinkStyle('/')}>
-          Control Core
-        </Link>
-        <Link to="/camera" style={makeLinkStyle('/camera')}>
-          👁️ Live Feed
-        </Link>
-        <Link to="/health" style={makeLinkStyle('/health')}>
-          🔍 Health
-        </Link>
-        <Link to="/bots" style={makeLinkStyle('/bots')}>
-          📦 Apps
-        </Link>
+      <div className="navbar-links">
+        {links.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className={`nav-link${location.pathname === link.to ? ' active' : ''}`}
+          >
+            <span>{link.icon}</span>
+            {link.label}
+          </Link>
+        ))}
       </div>
     </nav>
   );

@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 export default function DashboardPage() {
   const [speechText, setSpeechText] = useState('');
   const [processList, setProcessList] = useState([]);
+  const [scanning, setScanning] = useState(false);
 
   const handleSpeak = async () => {
     if (!speechText) return;
@@ -14,8 +15,15 @@ export default function DashboardPage() {
   };
 
   const fetchProcesses = async () => {
-    const res = await systemApi.getProcesses();
-    setProcessList(res.data.processes);
+    setScanning(true);
+    try {
+      const res = await systemApi.getProcesses();
+      setProcessList(res.data.processes);
+    } catch (e) {
+      console.error('Failed to fetch processes', e);
+    } finally {
+      setScanning(false);
+    }
   };
 
   return (
@@ -33,9 +41,10 @@ export default function DashboardPage() {
         <div className="input-group">
           <input
             type="text"
-            placeholder="What should I say?"
+            placeholder="What should Synapse say?"
             value={speechText}
             onChange={(e) => setSpeechText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSpeak()}
           />
           <Button variant="primary" onClick={handleSpeak}>
             🗣️ Speak
@@ -47,8 +56,8 @@ export default function DashboardPage() {
         title="System Monitor"
         subtitle="Processes running on your phone (Termux environment)"
         actions={
-          <Button variant="primary" onClick={fetchProcesses}>
-            🔍 Scan Processes
+          <Button variant="primary" onClick={fetchProcesses} disabled={scanning}>
+            {scanning ? '⏳ Scanning…' : '🔍 Scan Processes'}
           </Button>
         }
       >

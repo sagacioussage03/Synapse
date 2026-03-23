@@ -1,26 +1,57 @@
+/* ─────────────────────────────────────────────────
+   Synapse – Design Tokens & Global Reset
+   ───────────────────────────────────────────────── */
+
 :root {
-  --bg-main: #050814;
-  --bg-elevated: rgba(10, 16, 35, 0.98);
-  --bg-elevated-soft: rgba(10, 16, 35, 0.8);
-  --accent: #00ff88;
-  --accent-soft: rgba(0, 255, 136, 0.15);
-  --accent-strong: #12a87b;
-  --border-subtle: #283d5f;
-  --text-main: #f3f7ff;
-  --text-muted: #8fa1c3;
-  --text-soft: #64748b;
-  --shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.7);
+  /* Background hierarchy */
+  --bg-base: #06090f;
+  --bg-surface: #0c1220;
+  --bg-elevated: rgba(14, 22, 42, 0.92);
+  --bg-elevated-soft: rgba(14, 22, 42, 0.6);
+  --bg-card-hover: rgba(18, 28, 52, 0.95);
+  --bg-inset: #060b16;
+
+  /* Accent colours */
+  --accent: #00e87b;
+  --accent-soft: rgba(0, 232, 123, 0.1);
+  --accent-strong: #0fa968;
+  --accent-glow: rgba(0, 232, 123, 0.25);
+
+  /* Text */
+  --text-main: #eaf0ff;
+  --text-secondary: #a8b8d8;
+  --text-muted: #637697;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 30px var(--accent-glow);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-md: 10px;
+  --radius-xl: 20px;
   --radius-pill: 999px;
-  --gap-lg: 24px;
-  --gap-md: 16px;
+
+  /* Spacing */
+  --gap-xs: 6px;
   --gap-sm: 10px;
-  --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 32px;
+
+  /* Typography */
+  --font-main: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   color-scheme: dark;
   color: var(--text-main);
-  background-color: var(--bg-main);
+  background-color: var(--bg-base);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -37,15 +68,33 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: var(--font-main);
-  background: radial-gradient(circle at top, #0b1730 0, #050814 60%);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(10, 30, 60, 0.7) 0%, transparent 60%),
+    var(--bg-base);
   color: var(--text-main);
+  line-height: 1.5;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* General link + button reset */
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Global link + button reset */
 a {
   color: inherit;
   text-decoration: none;
@@ -53,4 +102,12 @@ a {
 
 button {
   font-family: inherit;
+}
+
+code {
+  background: var(--bg-inset);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: var(--accent);
 }
