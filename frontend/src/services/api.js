@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Read from Vite env – update .env when your phone's IP changes
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://192.168.1.112:8000';
 console.log('🔗 Synapse Environment Info:', {
   VITE_API_BASE: import.meta.env.VITE_API_BASE,
   MODE: import.meta.env.MODE,
