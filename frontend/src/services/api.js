@@ -1,13 +1,15 @@
 import axios from 'axios';
 
-// Read from Vite env – update .env when your phone's IP changes
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://192.168.1.112:8000';
-console.log('🔗 Synapse Environment Info:', {
-  VITE_API_BASE: import.meta.env.VITE_API_BASE,
-  MODE: import.meta.env.MODE,
-  DEV: import.meta.env.DEV,
-  FINAL_BASE: API_BASE
-});
+// ── API Base URL ────────────────────────────────────────
+// Since the frontend and backend both run on the phone,
+// we derive the backend URL from the browser's current
+// hostname. This works whether you access the app from
+// localhost (on the phone) or from your desktop via the
+// phone's IP address — no .env file needed.
+const API_BASE = import.meta.env.VITE_API_BASE
+  || `http://${window.location.hostname}:8000`;
+
+console.log('📡 Synapse API →', API_BASE);
 
 export const hardwareApi = {
   toggleTorch: (state) => axios.post(`${API_BASE}/hardware/torch/${state}`),
