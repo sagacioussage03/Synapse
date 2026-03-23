@@ -14,10 +14,11 @@ router = APIRouter(prefix="/system", tags=["System"])
 @router.get("/processes")
 def get_processes():
     processes = []
+    # process_iter is usually allowed in Termux for owned processes
     for proc in psutil.process_iter(['pid', 'name', 'username']):
         try:
             processes.append(proc.info)
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
     logger.info("Process scan → %d processes found", len(processes))
     return {"total": len(processes), "processes": processes}
@@ -30,9 +31,10 @@ def get_health():
         cpu_percent = psutil.cpu_percent(interval=0.4)
         cores = psutil.cpu_count(logical=True)
         cpu_data = {"percent": cpu_percent, "cores": cores}
-    except Exception as e:
-        logger.exception("Failed to read CPU stats")
-        cpu_data = {"percent": 0, "cores": 0, "error": str(e)}
+    except (PermissionError, Exception) as e:
+        # psutil.cpu_percent often fails on Android 10+ due to /proc/stat restrictions
+        logger.warning("CPU stats restricted: %s", e)
+        cpu_data = {"percent": 0, "cores": psutil.cpu_count(logical=True), "error": "Android restriction"}
 
     # 2. Memory
     try:
@@ -59,7 +61,7 @@ def get_health():
             "mount": "Termux Home",
         }
     except Exception as e:
-        logger.exception("Failed to read disk stats for %s", termux_home)
+        logger.warning("Disk stats for %s restricted or unavailable: %s", termux_home, e)
         disk_data = {"error": str(e)}
 
     # 4. Network Traffic
@@ -71,20 +73,28 @@ def get_health():
             "packets_sent": net.packets_sent,
             "packets_recv": net.packets_recv,
         }
-    except Exception as e:
-        logger.exception("Failed to read network counters")
-        net_data = {"error": str(e)}
+    except (PermissionError, Exception) as e:
+        # /proc/net/dev is often restricted on modern Android
+        logger.warning("Network counters restricted: %s", e)
+        net_data = {"error": "Android restriction"}
 
     # 5. Uptime
+    uptime_seconds = 0
     try:
         boot = psutil.boot_time()
-        uptime_data = {
-            "boot_time": boot,
-            "uptime_seconds": int(time.time() - boot),
-        }
-    except Exception as e:
-        logger.exception("Failed to read uptime")
-        uptime_data = {"error": str(e)}
+        uptime_seconds = int(time.time() - boot)
+    except (PermissionError, Exception):
+        # Fallback to uptime command if psutil fails
+        try:
+            # try reading /proc/uptime directly (sometimes allowed when psutil.boot_time is not)
+            with open("/proc/uptime", "r") as f:
+                uptime_seconds = int(float(f.readline().split()[0]))
+        except:
+            pass
+            
+    uptime_data = {"uptime_seconds": uptime_seconds}
+    if uptime_seconds == 0:
+        uptime_data["error"] = "Android restriction"
 
     return {
         "cpu": cpu_data,
@@ -98,8 +108,7 @@ def get_health():
 @router.get("/network")
 def get_network_status():
     data = {}
-
-    # Termux Wi-Fi connection info
+    # termux-api commands are usually the best way for network info on Android
     try:
         wifi_proc = subprocess.run(
             ["termux-wifi-connectioninfo"],
