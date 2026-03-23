@@ -5,7 +5,7 @@
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VENV_DIR="$PROJECT_DIR/../venv-Synapse"
+VENV_DIR="$PROJECT_DIR/venv-Synapse"
 
 # ── Activate venv (only if not already active) ──
 if [ -z "$VIRTUAL_ENV" ]; then
