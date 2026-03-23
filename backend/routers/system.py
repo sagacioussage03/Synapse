@@ -4,6 +4,7 @@ import psutil
 import json
 import time
 import os
+import typing
 
 from logger import get_logger
 
@@ -15,32 +16,68 @@ router = APIRouter(prefix="/system", tags=["System"])
 # Android 10+ restricts /proc/* for non-root processes.
 # We use shell commands as fallbacks for the stats psutil can't read.
 
-def _termux_cpu_usage() -> dict:
-    """Get CPU usage via 'top' command (works without root)."""
+def _termux_cpu_usage() -> dict[str, typing.Any]:
+    """Get CPU usage using multiple fallback strategies for Termux/Android."""
+    cores = psutil.cpu_count(logical=True) or 1
+
+    # Method 1: /proc/loadavg (often accessible even on Android 10+)
+    try:
+        with open("/proc/loadavg", "r") as f:
+            load_1min = float(f.readline().split()[0])
+            # Convert load average to a rough % (load / cores * 100)
+            raw_pct = (load_1min / float(cores)) * 100.0
+            percent = min(float(f"{raw_pct:.1f}"), 100.0)
+            return {"percent": percent, "method": "loadavg"}
+    except (PermissionError, FileNotFoundError):
+        pass
+
+    # Method 2: Two-sample CPU measurement via /proc/stat (for rooted)
+    try:
+        def read_cpu_times() -> typing.List[int]:
+            with open("/proc/stat", "r") as f:
+                parts = f.readline().split()
+                # user, nice, system, idle, iowait, irq, softirq
+                return [int(x) for x in parts[1:8]]
+
+        t1 = read_cpu_times()
+        time.sleep(0.3)
+        t2 = read_cpu_times()
+
+        idle_delta = float(t2[3] - t1[3])
+        total_delta = float(sum(t2) - sum(t1))
+        if total_delta > 0.0:
+            raw_pct = (1.0 - idle_delta / total_delta) * 100.0
+            percent = float(f"{raw_pct:.1f}")
+            return {"percent": percent, "method": "proc_stat"}
+    except (PermissionError, FileNotFoundError):
+        pass
+
+    # Method 3: 'top' command output parsing
     try:
         result = subprocess.run(
             ["top", "-bn1", "-d0.3"],
             capture_output=True, text=True, timeout=5,
         )
-        lines = result.stdout.strip().splitlines()
-        # Parse %Cpu line, e.g.  "%Cpu(s):  5.3 us,  1.2 sy, ..."
-        for line in lines:
-            if "%Cpu" in line or "%cpu" in line.lower():
-                # Extract user + sys percentages
+        for line in result.stdout.strip().splitlines():
+            if "%cpu" in line.lower() or "cpu" in line.lower():
                 parts = line.split(",")
                 user = 0.0
                 sys_ = 0.0
                 for part in parts:
-                    part = part.strip()
-                    if "us" in part:
-                        user = float(part.split()[0])
-                    elif "sy" in part:
-                        sys_ = float(part.split()[0])
-                return {"percent": round(user + sys_, 1), "method": "top"}
-        return {}
-    except Exception as e:
-        logger.debug("top fallback failed: %s", e)
-        return {}
+                    p = part.strip()
+                    if "us" in p:
+                        try: user = float(p.split()[0])
+                        except Exception: pass
+                    elif "sy" in p:
+                        try: sys_ = float(p.split()[0])
+                        except Exception: pass
+                if user + sys_ > 0.0:
+                    raw_pct = user + sys_
+                    return {"percent": float(f"{raw_pct:.1f}"), "method": "top"}
+    except Exception:
+        pass
+
+    return {}
 
 
 def _termux_uptime() -> int:
@@ -70,9 +107,9 @@ def _termux_uptime() -> int:
     return 0
 
 
-def _termux_network_traffic() -> dict:
+def _termux_network_traffic() -> dict[str, typing.Any]:
     """Get network traffic via /sys/class/net/ (usually accessible)."""
-    net_data = {"bytes_sent": 0, "bytes_recv": 0}
+    net_data: dict[str, typing.Any] = {"bytes_sent": 0, "bytes_recv": 0}
     try:
         net_dir = "/sys/class/net"
         for iface in os.listdir(net_dir):
@@ -184,7 +221,7 @@ def get_health():
     except (PermissionError, Exception):
         uptime_seconds = _termux_uptime()
 
-    uptime_data = {"uptime_seconds": uptime_seconds}
+    uptime_data: dict[str, typing.Any] = {"uptime_seconds": uptime_seconds}
     if uptime_seconds == 0:
         uptime_data["note"] = "Could not determine uptime"
 
