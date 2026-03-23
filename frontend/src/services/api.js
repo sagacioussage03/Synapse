@@ -2,6 +2,7 @@ import axios from 'axios';
 
 // Read from Vite env – update .env when your phone's IP changes
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+console.log('📡 Synapse API Base:', API_BASE);
 
 export const hardwareApi = {
   toggleTorch: (state) => axios.post(`${API_BASE}/hardware/torch/${state}`),
