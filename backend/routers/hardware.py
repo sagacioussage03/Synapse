@@ -18,8 +18,19 @@ def toggle_torch(state: str):
 @router.post("/speak")
 def speak(text: str):
     logger.info("TTS request: %s", text[:80])
-    subprocess.run(['termux-tts-speak', text])
-    return {"message": f"Synapse said: {text}"}
+    
+    # Kill any existing TTS tasks to avoid overlapping/hanging
+    subprocess.run(['pkill', '-f', 'termux-tts-speak'], capture_output=True)
+    subprocess.run(['pkill', '-f', 'TextToSpeech'], capture_output=True)
+    
+    try:
+        # 30-second timeout to ensure the process never permanently hangs the thread
+        subprocess.run(['termux-tts-speak', text], timeout=30)
+        return {"message": f"Synapse said: {text}"}
+    except subprocess.TimeoutExpired:
+        logger.error("TTS request timed out after 30 seconds")
+        subprocess.run(['pkill', '-f', 'termux-tts-speak'], capture_output=True)
+        return {"error": "TTS request timed out"}
 
 
 @router.post("/vibrate")
