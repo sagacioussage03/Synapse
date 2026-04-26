@@ -27,3 +27,9 @@ export const systemApi = {
 export const configApi = {
   getServices: () => axios.get(`${API_BASE}/config/services`),
 };
+
+export const servicesApi = {
+  getStatus: () => axios.get(`${API_BASE}/services/status`),
+  start: (id) => axios.post(`${API_BASE}/services/${id}/start`),
+  stop: (id) => axios.post(`${API_BASE}/services/${id}/stop`),
+};

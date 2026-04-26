@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from logger import setup_logging, get_logger
 from config import load_config, get_services
 from routers import hardware, system
+from routers.services import router as services_router
 
 logger = get_logger("core")
 
@@ -49,6 +50,7 @@ async def log_requests(request: Request, call_next):
 # ── Routers ───────────────────────────────────────────────
 app.include_router(hardware.router)
 app.include_router(system.router)
+app.include_router(services_router)
 
 
 @app.get("/")
